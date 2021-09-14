@@ -1,9 +1,6 @@
 module Burstall where
 
 -- Imports
-open import Agda.Builtin.Bool
-
-open import Agda.Builtin.List
 
 
 import Relation.Binary.PropositionalEquality as Eq
@@ -13,9 +10,18 @@ open Eq using (_≡_; refl; cong; sym; trans)
 open import Data.Nat using (ℕ; suc; zero; _+_)
 open import Data.Nat renaming (_≤_ to _leq_)
 open import Data.Sum renaming (_⊎_ to _∨_)
+open import Relation.Nullary using (¬_)
+open import Data.Empty using (⊥)
+open import Data.List using ([]; _∷_; List; [_] )
+open import Data.Bool using (true; false; Bool; _∧_)
 
 -- open import Relation.Binary using (TotalOrder)
+-- open import Level using (Level)
 
+
+data Decidable (A : Set ) : Set where
+  yes : A → Decidable A
+  no  : ¬ A → Decidable A
 
 private
   variable
@@ -30,7 +36,7 @@ record TotalOrder : Set₁ where
     ≤ref    : {x : Carrier}     → x ≤ x
     ≤asym   : {x y : Carrier}   → x ≤ y → y ≤ x → x ≡ y
     ≤total  : {x y : Carrier}   → x ≤ y ∨ y ≤ x
-
+    ≤dec    : {x y : Carrier} → Decidable ( x ≤ y )
 
 ℕ≤ : TotalOrder
 ℕ≤ = record
@@ -40,6 +46,7 @@ record TotalOrder : Set₁ where
        ; ≤ref    = leqrefl
        ; ≤asym   = leqasym
        ; ≤total  = leqtotal
+       ; ≤dec    = leqdec
        }
    where
    leqtrans  : ∀ {x y z } → x leq y → y leq z → x leq z
@@ -60,6 +67,21 @@ record TotalOrder : Set₁ where
    leqtotal {suc x} {suc y} with leqtotal {x} {y}
    ... | inj₁ x₁ = inj₁ (s≤s x₁)
    ... | inj₂ y₁ = inj₂ (s≤s y₁)
+
+   leqdecbotlemma : ∀ {x : ℕ} → suc x leq zero → ⊥
+   leqdecbotlemma ()
+
+   stripsuc : ∀ {x y : ℕ} → suc x leq suc y → x leq y
+   stripsuc (s≤s x) = x
+
+   leqdec : ∀ {x y} → Decidable (x leq y)
+   leqdec {zero} {y} = yes z≤n
+   leqdec {suc x} {zero} = no leqdecbotlemma
+   leqdec {suc x} {suc y} with leqdec {x} {y}
+   ... | yes x₁ = yes (s≤s x₁)
+   ... | no x₁ = no λ x₂ → x₁ (stripsuc x₂)
+
+
 
 -- Def. of concat
 concat : List A → List A → List A
@@ -120,7 +142,64 @@ variable
   Item : carrier Item≤
 
 
-data Tree (Item : TotalOrder) : Set  where
-  node    : Tree Item → carrier Item → Tree Item → Tree Item
-  tip     : carrier Item → Tree Item
-  niltree : Tree Item
+data Tree : (t : TotalOrder) →  Set  where
+  niltree : Tree Item≤
+  tip     : carrier Item≤ → Tree Item≤
+  node    : Tree Item≤ → carrier Item≤ → Tree Item≤ → Tree Item≤
+
+ 
+
+if_then_else_ : Decidable A  → B → B → B
+if yes x₁ then x else y = x
+if no  x₁ then x else y = y
+
+totree : carrier Item≤ → Tree Item≤ → Tree Item≤
+totree i niltree                 = tip i
+totree {Item≤} i (tip i₁)        =
+  if TotalOrder.≤dec Item≤ {i₁} {i}
+  then node (tip i₁) i (tip i)
+  else node (tip i) i₁ (tip i₁)
+totree {Item≤} i (node t₁ i₁ t₂) =
+  if TotalOrder.≤dec Item≤ {i₁} {i}
+  then node t₁ i₁ (totree i t₂)
+  else node (totree i t₁) i₁ t₂
+
+maketree : List (carrier Item≤) → Tree Item≤
+maketree is = lit totree is niltree
+
+flatten : Tree Item≤ → List (carrier Item≤)
+flatten niltree = []
+flatten (tip i) =  [ i ]
+flatten (node t₁ i₁ t₂) = concat (flatten t₁) (flatten t₂)
+
+sort : List (carrier Item≤) → List (carrier Item≤)
+sort {Item≤} is = flatten {Item≤} (maketree {Item≤} is)
+
+testsort : List (carrier ℕ≤)
+testsort  = sort {ℕ≤} (4 ∷ 234 ∷ 7 ∷ 2 ∷ 12 ∷ 0 ∷ [])
+
+
+stonks : {tot : TotalOrder} → (carrier tot → List (carrier tot) → Set)
+stonks = {!!}
+
+istrue : Decidable A → Bool
+istrue (yes x) = true
+istrue (no x) = false
+
+i<s : List (carrier Item≤) → Bool
+i<s [] = true
+i<s (x ∷ []) = true
+i<s {Item≤} (x ∷ y ∷ xs) = istrue (TotalOrder.≤dec Item≤ {x} {y}) ∧ i<s {Item≤} (y ∷ xs)
+
+-- mutual
+
+--   data OrdList (A : Set) : Set where
+--     []ₒ  : OrdList A
+--     _∷ₒ_ : {x : A} → {xs : OrdList A} → x c xs → OrdList A
+
+--   -- bevis här
+-- bygger listor → bevisar att ordningen håller → gör till ordlist
+
+-- elem<list : 
+
+-- !SKÄMS!
