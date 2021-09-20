@@ -5,7 +5,7 @@ module Burstall where
 import Relation.Binary.PropositionalEquality as Eq
 open Eq.≡-Reasoning
 open Eq using (_≡_; refl; cong; sym; trans)
-open import Relation.Nullary using (¬_; Dec; _because_ ; ofʸ; ofⁿ; yes; no)
+open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Data.Nat using (ℕ; suc; zero; _+_)
 open import Data.Nat renaming (_≤_ to _≤ₙ_)
 open import Data.Sum renaming (_⊎_ to _∨_)
@@ -22,9 +22,6 @@ private
     A B : Set
 
 -- TODO:
--- Clean up whitespace
--- Figure out if ⦃ potato ⦄ can be omitted in more cases
--- Replace many lemmas with patterm matching lambdas. Rename proof variables.
 -- Consistent naming of relations and their decision procedures
 
 
@@ -211,9 +208,29 @@ i≤?t i (node t₁ i₁ t₂) with i≤?t i t₁ | i≤?t i t₂
 ... | yes _     | no  ¬i≤t₂  = no λ { (i≤node .i .i₁ .t₁ .t₂ _ i≤t₂) → ¬i≤t₂ i≤t₂ }
 ... | yes i≤t₁  | yes i≤t₂   = yes (i≤node i i₁ t₁ t₂ i≤t₁ i≤t₂)
 
+
+data _ₜ₁≤ₜ₂_ {{_ : TotalOrder Item}} : Tree Item → Tree Item → Set where
+  niltree≤t : (t : Tree Item ) → niltree ₜ₁≤ₜ₂ t
+  tip≤t     : (i : Item) → (t₂ : Tree Item) → i ᵢ≤ₜ t₂ → tip i ₜ₁≤ₜ₂ t₂
+  node≤t    : (t₁₁ t₁₂ t₂ : Tree Item) → (i : Item) →
+              t₁₁ ₜ₁≤ₜ₂ t₂ → t₁₂ ₜ₁≤ₜ₂ t₂ →
+              (node t₁₁ i t₁₂ ₜ₁≤ₜ₂ t₂)
+
+t≤?t : {{_ : TotalOrder Item}} → (t₁ t₂ : Tree Item) → Dec (t₁ ₜ₁≤ₜ₂ t₂)
+t≤?t niltree t = yes (niltree≤t t)
+t≤?t (tip i) t₂ with i≤?t i t₂
+... | yes p = yes (tip≤t i t₂ p)
+... | no ¬p = no (λ { (tip≤t .i .t₂ x) → ¬p x})
+
+t≤?t (node t₁₁ i t₁₂) t₂ with t≤?t t₁₁ t₂ | t≤?t t₁₂ t₂
+... | yes p | yes p₁ = yes (node≤t t₁₁ t₁₂ t₂ i p p₁)
+... | no ¬p | yes p = no λ { (node≤t .t₁₁ .t₁₂ .t₂ .i x x₁) → ¬p x}
+... | p | no ¬p = no (λ { (node≤t .t₁₁ .t₁₂ .t₂ .i x x₁) → ¬p x₁})
+
+
+
 -- mutual
 
 --   data OrdList (A : Set) : Set where
 --     []ₒ  : OrdList A
 --     _∷ₒ_ : {x : A} → {xs : OrdList A} → x c xs → OrdList A
-
