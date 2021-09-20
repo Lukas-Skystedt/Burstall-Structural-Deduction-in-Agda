@@ -5,14 +5,14 @@ module Burstall where
 import Relation.Binary.PropositionalEquality as Eq
 open Eq.≡-Reasoning
 open Eq using (_≡_; refl; cong; sym; trans)
-
+open import Relation.Nullary using (¬_; Dec; _because_ ; ofʸ; ofⁿ; yes; no)
 open import Data.Nat using (ℕ; suc; zero; _+_)
 open import Data.Nat renaming (_≤_ to _≤ₙ_)
 open import Data.Sum renaming (_⊎_ to _∨_)
-open import Relation.Nullary using (¬_; Dec; _because_ ; ofʸ; ofⁿ; yes; no)
 open import Data.Empty using (⊥)
 open import Data.List using ([]; _∷_; List; [_] )
 open import Data.Bool using (true; false; Bool; _∧_)
+open import Function using (_∘_)
 
 -- open import Relation.Binary using (TotalOrder)
 -- open import Level using (Level)
@@ -20,6 +20,12 @@ open import Data.Bool using (true; false; Bool; _∧_)
 private
   variable
     A B : Set
+
+-- TODO:
+-- Clean up whitespace
+-- Figure out if ⦃ potato ⦄ can be omitted in more cases
+-- Replace many lemmas with patterm matching lambdas. Rename proof variables.
+-- Consistent naming of relations and their decision procedures
 
 
 record TotalOrder (Carrier : Set) : Set₁ where
@@ -30,15 +36,15 @@ record TotalOrder (Carrier : Set) : Set₁ where
     ≤refl   : ∀ {x}     → x ≤ x
     ≤asym   : ∀ {x y}   → x ≤ y → y ≤ x → x ≡ y
     ≤total  : ∀ {x y}   → x ≤ y ∨ y ≤ x
-    ≤dec    : ∀ {x y}   → Dec (x ≤ y)
+    ≤dec    : ∀ x → ∀ y → Dec (x ≤ y)
 
 
 open TotalOrder {{...}} public
 
 instance
   ℕ≤ : TotalOrder ℕ
-
   _≤_   {{ℕ≤}}  = _≤ₙ_
+
   ≤trans {{ℕ≤}} z≤n     _       = z≤n
   ≤trans {{ℕ≤}} (s≤s a) (s≤s b) = s≤s (≤trans a b)
 
@@ -51,22 +57,14 @@ instance
   ≤total {{ℕ≤}} {zero}  {_}    = inj₁ z≤n
   ≤total {{ℕ≤}} {suc _} {zero} = inj₂ z≤n
   ≤total {{ℕ≤}} {suc m} {suc n} with ≤total {{ℕ≤}} {m} {n}
-  ... | inj₁ m≤n         = inj₁ (s≤s m≤n)
-  ... | inj₂ n≤m         = inj₂ (s≤s n≤m)
+  ... | inj₁ m≤n               = inj₁ (s≤s m≤n)
+  ... | inj₂ n≤m               = inj₂ (s≤s n≤m)
 
-  ≤dec {{ℕ≤}} {zero}  {n}    = yes z≤n
-  ≤dec {{ℕ≤}} {suc m} {zero} = no (≤ₙdecbotlemma)
-    where
-    ≤ₙdecbotlemma : ∀ {n} → suc n ≤ₙ zero → ⊥
-    ≤ₙdecbotlemma ()
-
-  ≤dec {{ℕ≤}} {suc m} {suc n} with ≤dec {{ℕ≤}} {m} {n}
-  ... | yes m≤n        = yes (s≤s m≤n)
-  ... | no ¬m≤n        = no λ sm≤sn → ¬m≤n (≤ₙ-dec sm≤sn)
-    where
-     ≤ₙ-dec : ∀ {m n} → suc m ≤ₙ suc n → m ≤ₙ n
-     ≤ₙ-dec (s≤s m≤n) = m≤n
-
+  ≤dec {{ℕ≤}} zero    n    = yes z≤n
+  ≤dec {{ℕ≤}} (suc m) zero = no (λ ())
+  ≤dec {{ℕ≤}} (suc m) (suc n) with ≤dec {{ℕ≤}} m n
+  ... | yes m≤n            = yes (s≤s m≤n)
+  ... | no ¬m≤n            = no λ { (s≤s m≤n) → ¬m≤n m≤n}
 
 -- Def. of concat
 concat : List A → List A → List A
@@ -87,32 +85,32 @@ lit f (x ∷ xs) y = f x (lit f xs y)
 ltest : _
 ltest = lit _+_ (2 ∷ 3 ∷ 4 ∷ []) 1
 
-lit-concat-lemma : (f : (A → B → B)) (xs1 xs2 : List A) (y : B)
-                 → lit f (concat xs1 xs2) y ≡ lit f xs1 (lit f xs2 y)
-lit-concat-lemma f (x ∷ xs1) xs2 y =
+lit-concat-lemma : (f : (A → B → B)) (xs₁ xs₂ : List A) (y : B)
+                 → lit f (concat xs₁ xs₂) y ≡ lit f xs₁ (lit f xs₂ y)
+lit-concat-lemma f (x ∷ xs₁) xs₂ y =
   begin
-  lit f (concat (x ∷ xs1) xs2) y
+  lit f (concat (x ∷ xs₁) xs₂) y
   ≡⟨⟩ -- by def. of concat
-  lit f (x ∷ concat xs1 xs2) y
+  lit f (x ∷ concat xs₁ xs₂) y
   ≡⟨⟩ -- by def of lit
-  f x (lit f (concat xs1 xs2) y)
-  ≡⟨ cong (f x) (lit-concat-lemma f xs1 xs2 y) ⟩ -- by IH
-  f x (lit f xs1 (lit f xs2 y))
+  f x (lit f (concat xs₁ xs₂) y)
+  ≡⟨ cong (f x) (lit-concat-lemma f xs₁ xs₂ y) ⟩ -- by IH
+  f x (lit f xs₁ (lit f xs₂ y))
   ≡⟨⟩ -- by def. of lit
-  lit f (x ∷ xs1) (lit f xs2 y) ∎
-lit-concat-lemma f [] xs2 y =
+  lit f (x ∷ xs₁) (lit f xs₂ y) ∎
+lit-concat-lemma f [] xs₂ y =
   begin
-  lit f (concat [] xs2) y
+  lit f (concat [] xs₂) y
   ≡⟨⟩ -- By def. of concat
-  lit f xs2 y
+  lit f xs₂ y
   ≡⟨⟩
-  lit f [] (lit f xs2 y) ∎
+  lit f [] (lit f xs₂ y) ∎
 
 
 p-lemma : {xs : List A} → {y₀ : A} → {f : A → A → A} → {P : A → Set} →
-         P y₀ →
-         (∀ {x y} → P y → P (f x y)) →
-         P (lit f xs y₀)
+          P y₀ →
+          (∀ {x y} → P y → P (f x y)) →
+          P (lit f xs y₀)
 p-lemma {xs = []}     {y₀} {f} {P} Pyₒ impl = Pyₒ
 p-lemma {xs = x ∷ xs} {y₀} {f} {P} Pyₒ impl =
   let IH = p-lemma {xs = xs} {y₀} {f} {P} Pyₒ impl
@@ -123,59 +121,40 @@ p-lemma {xs = x ∷ xs} {y₀} {f} {P} Pyₒ impl =
 variable
   Item : Set
 
-
-data Tree (Item : Set) {{t : TotalOrder Item }} :   Set  where
+data Tree (Item : Set) {{t : TotalOrder Item }} : Set where
   niltree : Tree Item
   tip     : Item → Tree Item
   node    : Tree Item → Item → Tree Item → Tree Item
 
+if_then_else_ : Dec A → B → B → B
+if yes A then x else y = x
+if no ¬A then x else y = y
 
-if_then_else_ : Dec A  → B → B → B
-if yes x₁ then x else y = x
-if no  x₁ then x else y = y
-
-totree : {{_ : TotalOrder Item}} → Item → Tree Item → Tree Item -- carrier Item≤ → Tree Item≤ → Tree Item≤
-totree i niltree                 = tip i
-totree {{potato}} i (tip i₁)        =
-  if ≤dec {{potato}} {i₁} {i}
+totree : {{_ : TotalOrder Item}} → Item → Tree Item → Tree Item
+totree i niltree         = tip i
+totree i (tip i₁)        =
+  if ≤dec i₁ i
   then node (tip i₁) i (tip i)
   else node (tip i) i₁ (tip i₁)
-totree {{potato}} i (node t₁ i₁ t₂) =
-  if ≤dec {{potato}} {i₁} {i}
+totree i (node t₁ i₁ t₂) =
+  if ≤dec i₁ i
   then node t₁ i₁ (totree i t₂)
   else node (totree i t₁) i₁ t₂
 
+
 maketree : {{_ : TotalOrder Item}} → List Item → Tree Item
 maketree is = lit totree is niltree
+
 
 flatten : {{ _ : TotalOrder Item}} → Tree Item → List (Item)
 flatten niltree         = []
 flatten (tip i)         = [ i ]
 flatten (node t₁ i₁ t₂) = concat (flatten t₁) (flatten t₂)
 
---?0 ∷ ?1 != flatten (totree x₁ (lit totree is niltree)
 
 sort : {{_ : TotalOrder Item}} → List (Item) → List (Item)
-sort {{potato}} is = flatten {{potato}} (maketree {{potato}} is)
+sort is = flatten (maketree is)
 
--- testsort : List (ℕ≤)
--- testsort  = sort {ℕ≤} (4 ∷ 234 ∷ 7 ∷ 2 ∷ 12 ∷ 0 ∷ [])
-
--- rip stonks :/
-
-
-istrue : Dec A → Bool
-istrue (yes x) = true
-istrue (no x) = false
-
-i<s : {{ _ : TotalOrder Item }} → List (Item) → Bool
-i<s [] = true
-i<s (x ∷ []) = true
-i<s {{potato}} (x ∷ y ∷ xs) = istrue (≤dec {{potato}} {x} {y}) ∧ i<s {{potato}} (y ∷ xs)
-
-_&&_ : Bool → Bool → Bool
-true && b = b
-false && b = false
 
 data _ᵢ≤ᵢₛ_  {{_ : TotalOrder Item}} : Item → List Item →  Set where
   i≤[] : (i : Item) → i ᵢ≤ᵢₛ []
@@ -183,17 +162,9 @@ data _ᵢ≤ᵢₛ_  {{_ : TotalOrder Item}} : Item → List Item →  Set where
 
 i≤is : {{ _ : TotalOrder Item}} → (i : Item) → (is : List (Item)) →  Dec ( i ᵢ≤ᵢₛ is)
 i≤is x [] = yes (i≤[] x)
-i≤is {{potato}}  x₁ (x₂ ∷ xs) with ≤dec {{potato}} {x₁} {x₂} | i≤is x₂ xs
-... | no proof | _ = no (lemma proof)
-  where
-  lemma : ¬ _≤_ {{potato}} x₁ x₂ → ¬ (x₁ ᵢ≤ᵢₛ (x₂ ∷ xs))
-  lemma p (i≤i∷is .x₁ .x₂ .xs x p3) = p x
-
-... | yes proof | no proof₁ = no (lemma proof₁)
-  where
-  lemma : ¬ (x₂ ᵢ≤ᵢₛ xs) → ¬ (x₁ ᵢ≤ᵢₛ (x₂ ∷ xs))
-  lemma x (i≤i∷is ._ ._ .xs x₁ x₂) = x x₂
-
+i≤is x₁ (x₂ ∷ xs) with ≤dec x₁ x₂ | i≤is x₂ xs
+... | no proof  | _          = no λ { (i≤i∷is _ _ _ x _) → proof x}
+... | yes _     | no ¬p      = no λ { (i≤i∷is _ _ _ _ p) → ¬p p }
 ... | yes proof | yes proof₁ = yes (i≤i∷is x₁ x₂ xs proof proof₁)
 
 
@@ -204,15 +175,9 @@ data _ᵢₛ₁≤ᵢₛ₂_ {{_ : TotalOrder Item}} : List Item → List Item �
 is₁≤is₂ :  {{ _ : TotalOrder Item}} → (is₁ is₂  : List (Item)) → Dec ( is₁ ᵢₛ₁≤ᵢₛ₂ is₂)
 is₁≤is₂ [] is = yes ([]≤is is)
 is₁≤is₂ (i₁ ∷ is₁) is₂ with i≤is i₁ is₂ | is₁≤is₂ is₁ is₂
-... | no proof | p = no (lemma proof)
-  where lemma : ¬ (i₁ ᵢ≤ᵢₛ is₂) → ¬ (i₁ ∷ is₁) ᵢₛ₁≤ᵢₛ₂ is₂
-        lemma x (i∷is₁≤is₂ .i₁ .is₁ .is₂ x₁ x₂) = x x₁
-
-... | yes proof | no proof₁ = no (lemma proof₁)
-  where lemma : ¬ (is₁ ᵢₛ₁≤ᵢₛ₂ is₂) → ¬ (i₁ ∷ is₁) ᵢₛ₁≤ᵢₛ₂ is₂
-        lemma x₁ (i∷is₁≤is₂ .i₁ .is₁ ._ x p) = x₁ p
-
-... | yes proof | yes proof₁ = yes (i∷is₁≤is₂ i₁ is₁ is₂ proof proof₁)
+... | no  ¬i₁≤is₂ | _            = no λ { (i∷is₁≤is₂ _ _ _ i₁≤is₂ _) → ¬i₁≤is₂ i₁≤is₂ }
+... | yes _       | no  ¬is₁≤is₂ = no λ { (i∷is₁≤is₂ _ _ _ _ is₁≤is₂) → ¬is₁≤is₂ is₁≤is₂}
+... | yes i₁≤is₂  | yes is₁≤i₂   = yes (i∷is₁≤is₂ i₁ is₁ is₂ i₁≤is₂ is₁≤i₂)
 
 
 data ord {{_ : TotalOrder Item}} : List Item → Set where
@@ -222,11 +187,8 @@ data ord {{_ : TotalOrder Item}} : List Item → Set where
 ord? : {{ _ : TotalOrder Item}} → (is : List Item) → Dec (ord is)
 ord? [] = yes ord[]
 ord? (i ∷ is) with i≤is i is
-... | no proof = no (lemma proof) 
-  where
-    lemma : ¬ (i ᵢ≤ᵢₛ is) → ¬ ord (i ∷ is)
-    lemma x (ord∷ .i .is x₁) = x x₁
-... | yes proof = yes (ord∷ i is proof)
+... | no  ¬i≤is = no λ { (ord∷ .i .is i≤is) → ¬i≤is i≤is}
+... | yes  i≤is = yes (ord∷ i is i≤is)
 
 
 -- ord?sort : {{ _ : TotalOrder Item}} → ∀ {is : List Item}  → ord (sort is)
@@ -241,34 +203,17 @@ data _ᵢ≤ₜ_ {{_ : TotalOrder Item}} : Item → Tree Item → Set where
 
 i≤?t : {{_ : TotalOrder Item}} → (i : Item) → (t : Tree Item) → Dec (i ᵢ≤ₜ t)
 i≤?t i niltree = yes (i≤niltree i)
-i≤?t {{potato}} i (tip i₁) with ≤dec {{potato}} {i} {i₁}
-... | no proof = no (lemma proof)
-  where
-    lemma : ¬ (_≤_ {{potato}} i) i₁ → ¬ (i ᵢ≤ₜ tip i₁)
-    lemma x (i≤tip .i .i₁ x₁) = x x₁
-... | yes proof = yes (i≤tip i i₁ proof)
-
+i≤?t i (tip i₁) with ≤dec i i₁
+... | no  ¬i≤i₁ = no λ { (i≤tip .i .i₁ i≤i₁) → ¬i≤i₁ i≤i₁}
+... | yes  i≤i₁ = yes (i≤tip i i₁ i≤i₁)
 i≤?t i (node t₁ i₁ t₂) with i≤?t i t₁ | i≤?t i t₂
-... | no proof | p2 = no (lemma proof)
-    where
-    lemma : ¬ (i ᵢ≤ₜ t₁) → ¬ (i ᵢ≤ₜ node t₁ i₁ t₂)
-    lemma x (i≤node .i .i₁ .t₁ .t₂ x₁ x₂) = x x₁
-... | yes proof | no proof₁ = no (lemma proof₁)
-    where
-    lemma : ¬ (i ᵢ≤ₜ t₂) → ¬ (i ᵢ≤ₜ node t₁ i₁ t₂)
-    lemma x (i≤node .i .i₁ .t₁ .t₂ x₁ x₂) = x x₂
-... | yes proof | yes proof₁ = yes (i≤node i i₁ t₁ t₂ proof proof₁)
+... | no  ¬i≤t₁ | _          = no λ { (i≤node .i .i₁ .t₁ .t₂ i≤t₁ _) → ¬i≤t₁ i≤t₁ }
+... | yes _     | no  ¬i≤t₂  = no λ { (i≤node .i .i₁ .t₁ .t₂ _ i≤t₂) → ¬i≤t₂ i≤t₂ }
+... | yes i≤t₁  | yes i≤t₂   = yes (i≤node i i₁ t₁ t₂ i≤t₁ i≤t₂)
 
--- (istrue (≤dec {{potato}} {x₁} {x})) && (i≤is {{potato}} xs x)
 -- mutual
 
 --   data OrdList (A : Set) : Set where
 --     []ₒ  : OrdList A
 --     _∷ₒ_ : {x : A} → {xs : OrdList A} → x c xs → OrdList A
 
---   -- bevis här
--- bygger listor → bevisar att ordningen håller → gör till ordlist
-
--- elem<list : 
-
--- !SKÄMS!
