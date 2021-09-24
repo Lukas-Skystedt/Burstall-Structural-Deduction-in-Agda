@@ -160,13 +160,13 @@ sort is = flatten (maketree is)
 
 data _ᵢ≤ᵢₛ_  {{_ : TotalOrder Item}} : Item → List Item →  Set where
   i≤[] : (i : Item) → i ᵢ≤ᵢₛ []
-  i≤i∷is : (i₁ i₂ : Item) → (is : List Item) → i₁ ≤ i₂ → i₂ ᵢ≤ᵢₛ is → i₁ ᵢ≤ᵢₛ (i₂ ∷ is)
+  i≤i∷is : (i₁ i₂ : Item) → (is : List Item) → i₁ ≤ i₂ → i₁ ᵢ≤ᵢₛ is → i₁ ᵢ≤ᵢₛ (i₂ ∷ is)
 
 i≤is : {{ _ : TotalOrder Item}} → (i : Item) → (is : List (Item)) →  Dec ( i ᵢ≤ᵢₛ is)
 i≤is x [] = yes (i≤[] x)
-i≤is x₁ (x₂ ∷ xs) with ≤dec x₁ x₂ | i≤is x₂ xs
-... | no proof  | _          = no λ { (i≤i∷is _ _ _ x _) → proof x}
-... | yes _     | no ¬p      = no λ { (i≤i∷is _ _ _ _ p) → ¬p p }
+i≤is x₁ (x₂ ∷ xs) with ≤dec x₁ x₂ | i≤is x₁ xs
+... | no proof  | _          = no λ { (i≤i∷is _ _ _ p _) → proof p}
+... | yes _     | no ¬p      = no (λ { (i≤i∷is _ _ _ _ p) → ¬p p})
 ... | yes proof | yes proof₁ = yes (i≤i∷is x₁ x₂ xs proof proof₁)
 
 
@@ -184,14 +184,14 @@ is₁≤is₂ (i₁ ∷ is₁) is₂ with i≤is i₁ is₂ | is₁≤is₂ is�
 
 data ord {{_ : TotalOrder Item}} : List Item → Set where
   ord[] : ord []
-  ord∷  : (i : Item) → (is : List Item) → i ᵢ≤ᵢₛ is → ord (i ∷ is)
+  ord∷  : (i : Item) → (is : List Item) → i ᵢ≤ᵢₛ is → ord is → ord (i ∷ is)
 
 ord? : {{ _ : TotalOrder Item}} → (is : List Item) → Dec (ord is)
 ord? [] = yes ord[]
-ord? (i ∷ is) with i≤is i is
-... | no  ¬i≤is = no λ { (ord∷ .i .is i≤is) → ¬i≤is i≤is}
-... | yes  i≤is = yes (ord∷ i is i≤is)
-
+ord? (i ∷ is) with i≤is i is | ord? is
+... | yes p | yes p₁ = yes (ord∷ i is p p₁)
+... | yes p | no ¬p = no (λ { (ord∷ .i .is x x₁) → ¬p x₁})
+... | no ¬p | b = no (λ { (ord∷ .i .is x x₁) → ¬p x})
 
 
 data _ᵢ≤ₜ_ {{_ : TotalOrder Item}} : Item → Tree Item → Set where
@@ -259,17 +259,6 @@ ordₜ? (node t₁ i t₂) with ordₜ? t₁ | ordₜ? t₂ | t≤?i t₁ i | i�
 ... | yes a | yes b | yes c | no  d = no λ { (ord-node x x₁ x₂ x₃) → d x₃}
 ... | yes a | yes b | yes c | yes d = yes (ord-node a b c d)
 
--- totree : {{_ : TotalOrder Item}} → Item → Tree Item → Tree Item
--- totree i niltree         = tip i
--- totree i (tip i₁)        =
---   if ≤dec i₁ i
---   then node (tip i₁) i (tip i)
---   else node (tip i) i₁ (tip i₁)
--- totree i (node t₁ i₁ t₂) =
---   if ≤dec i₁ i
---   then node t₁ i₁ (totree i t₂)
---   else node (totree i t₁) i₁ t₂
-
 lemma : {{_ : TotalOrder Item}} (t : Tree Item) (i₁ i₂ : Item) → i₁ ≤ i₂ → i₁ ᵢ≤ₜ t → ordₜ (totree i₂ t)
       → i₁ ᵢ≤ₜ totree i₂ t
 lemma niltree  i₁ i₂ i₁≤i₂ (i≤niltree .i₁)       (ord-tip .i₂) = i≤tip i₁ i₂ i₁≤i₂
@@ -283,6 +272,29 @@ lemma (node t₁ i₃ t₂) i₁ i₂ i₁≤i₂ (i≤node .i₁ .i₃ .t₁ .t
 lemma (node t₁ i₃ t₂) i₁ i₂ i₁≤i₂ (i≤node .i₁ .i₃ .t₁ .t₂ i₁≤t₁ i₁≤t₂) (ord-node p₁ _ _ _) | no _
   = i≤node i₁ i₃ (totree i₂ t₁) t₂ (lemma t₁ i₁ i₂ i₁≤i₂ i₁≤t₁ p₁) i₁≤t₂
 
+lemma2 : {{_ : TotalOrder Item}} (t : Tree Item) (i₁ i₂ : Item) → i₂ ≤ i₁  → t ₜ≤ᵢ i₁ → ordₜ (totree i₂ t)
+  → totree i₂ t ₜ≤ᵢ i₁
+lemma2 niltree i₁ i₂ i₂≤i₁ _ _ = tip≤i i₁ i₂ i₂≤i₁
+lemma2 (tip i₃) i₁ i₂ i₂≤i₁ (tip≤i .i₁ .i₃ i₃≤i₂) x₂ with ≤dec i₃ i₂
+... | yes _ = node≤i i₁ i₂ (tip i₃) (tip i₂) (tip≤i i₁ i₃ i₃≤i₂) (tip≤i i₁ i₂ i₂≤i₁)
+... | no  _ = node≤i i₁ i₃ (tip i₂) (tip i₃) (tip≤i i₁ i₂ i₂≤i₁) (tip≤i i₁ i₃ i₃≤i₂)
+lemma2 (node t₁ i₃ t₂) i₁ i₂ i₂≤i₁ (node≤i .i₁ .i₃ .t₁ .t₂ t₁≤i₁ t₂≤i₁) x₂ with ≤dec i₃ i₂
+lemma2 (node t₁ i₃ t₂) i₁ i₂ i₂≤i₁ (node≤i .i₁ .i₃ .t₁ .t₂ t₁≤i₁ t₂≤i₁) (ord-node _ p₁ _ _) | yes p
+  = node≤i i₁ i₃ t₁ (totree i₂ t₂) t₁≤i₁ (lemma2 t₂ i₁ i₂ i₂≤i₁ t₂≤i₁ p₁)
+lemma2 (node t₁ i₃ t₂) i₁ i₂ i₂≤i₁ (node≤i .i₁ .i₃ .t₁ .t₂ t₁≤i₁ t₂≤i₁) (ord-node p₂ _ _ _) | no ¬p
+  = node≤i i₁ i₃ (totree i₂ t₁) t₂ (lemma2 t₁ i₁ i₂ i₂≤i₁ t₁≤i₁ p₂) t₂≤i₁
+
+-- lemma2 niltree  i₁ i₂ i₁≤i₂ (niltree≤i .i₁)       (ord-tip .i₂) = tip≤i i₁ i₂ i₁≤i₂
+-- lemma2 (tip i₃) i₁ i₂ i₁≤i₂ (tip≤i .i₁ .i₃ i₁≤i₃) p
+--   with ≤dec i₃ i₂
+-- ... | yes _      = node≤i i₁ i₂ (tip i₃) (tip i₂) (i≤tip i₁ i₃ ?) (i≤tip i₁ i₂ i₁≤i₂)
+-- ... | no _       = i≤node i₁ i₃ (tip i₂) (tip i₃) (i≤tip i₁ i₂ i₁≤i₂) (i≤tip i₁ i₃ i₁≤i₃)
+-- lemma2 (node t₁ i₃ t₂) i₁ i₂ i₁≤i₂ (i≤node .i₁ .i₃ .t₁ .t₂ i₁≤t₁ i₁≤t₂) _                  with ≤dec i₃ i₂
+-- lemma2 (node t₁ i₃ t₂) i₁ i₂ i₁≤i₂ (i≤node .i₁ .i₃ .t₁ .t₂ i₁≤t₁ i₁≤t₂) (ord-node _ p₂ _ _) | yes _
+--   = i≤node i₁ i₃ t₁ (totree i₂ t₂) i₁≤t₁ (lemma2 t₂ i₁ i₂ i₁≤i₂ i₁≤t₂ p₂)
+-- lemma2 (node t₁ i₃ t₂) i₁ i₂ i₁≤i₂ (i≤node .i₁ .i₃ .t₁ .t₂ i₁≤t₁ i₁≤t₂) (ord-node p₁ _ _ _) | no _
+--   = i≤node i₁ i₃ (totree i₂ t₁) t₂ (lemma2 t₁ i₁ i₂ i₁≤i₂ i₁≤t₁ p₁) i₁≤t₂
+
 totree-≤ : {{_ : TotalOrder Item}} (i : Item) (t : Tree Item) → ordₜ t → ordₜ (totree i t)
 totree-≤ i niltree p = ord-tip i
 totree-≤ i (tip i₁) (ord-tip .i₁) with ≤dec i₁ i
@@ -290,11 +302,40 @@ totree-≤ i (tip i₁) (ord-tip .i₁) with ≤dec i₁ i
 ... | no  q = ord-node (ord-tip i)  (ord-tip i₁) (tip≤i i₁ i (negate q)) (i≤tip i₁ i₁ ≤refl)
 totree-≤ i (node t₁ i₁ t₂) (ord-node ord-t₁ ord-t₂ t₁≤i₁ i₁≤t₂) with ≤dec i₁ i
 ... | yes q = ord-node ord-t₁ (totree-≤ i t₂ ord-t₂) t₁≤i₁ (lemma t₂ i₁ i q i₁≤t₂ (totree-≤ i t₂ ord-t₂))
-... | no q = ord-node (totree-≤ i t₁ ord-t₁) ord-t₂ {!!} i₁≤t₂
+... | no q = ord-node (totree-≤ i t₁ ord-t₁) ord-t₂ (lemma2 t₁ i₁ i (negate q) t₁≤i₁ (totree-≤ i t₁ ord-t₁)) i₁≤t₂
+
+maketree-≤ : {{_ : TotalOrder Item}} (is : List Item) → ordₜ (maketree is)
+maketree-≤ [] = ord-nil
+maketree-≤ (i ∷ is) = totree-≤ i (maketree is) (maketree-≤ is)
+
+concat-≤ : {{ _ : TotalOrder Item}} (is₁ is₂ : List Item) → ord is₁ → ord is₂ → is₁ ᵢₛ₁≤ᵢₛ₂ is₂
+         → ord (concat is₁ is₂)
+concat-≤ [] is₂ x x₁ x₂ = x₁
+concat-≤ (x₃ ∷ is₁) is₂ (ord∷ .x₃ .is₁ x x₄) x₁ (i∷is₁≤is₂ .x₃ .is₁ .is₂ x₂ x₅) = ord∷ x₃ (concat is₁ is₂) (l x₃ is₁ is₂ x x₂) (concat-≤ is₁ is₂ x₄ x₁ x₅)
+  where
+    l : {{_ : TotalOrder Item}} (i : Item) → (is₁ is₂ : List Item) → i ᵢ≤ᵢₛ is₁ → i ᵢ≤ᵢₛ is₂ → i ᵢ≤ᵢₛ concat is₁ is₂
+    l i [] _ _ x₁ = x₁
+    l i (x₂ ∷ is₁) is₂ (i≤i∷is .i .x₂ .is₁ x x₃) x₁ = i≤i∷is i x₂ (concat is₁ is₂) x (l i is₁ is₂ x₃ x₁)
 
 
--- mutual
 
---   data OrdList (A : Set) : Set where
---     []ₒ  : OrdList A
---     _∷ₒ_ : {x : A} → {xs : OrdList A} → x c xs → OrdList A
+flatten-≤ : {{ _ : TotalOrder Item}} (t : Tree Item) → ordₜ t → ord (flatten t)
+flatten-≤ niltree x = ord[]
+flatten-≤ (tip x₁) (ord-tip .x₁) = ord∷ x₁ [] (i≤[] x₁) ord[]
+flatten-≤ (node t x₁ t₁) (ord-node x x₂ x₃ x₄) = concat-≤ (flatten t) (flatten t₁) (flatten-≤ t x) (flatten-≤ t₁ x₂) {!!}
+  where
+
+
+    l2 : {{_ : TotalOrder Item}} (i₁ i₂ : Item) → (t₁ : Tree Item) → i₁ ≤ i₂ → i₂ ᵢ≤ₜ t₁ → i₁ ᵢ≤ₜ t₁ 
+    l2 i₁ i₂ niltree x x₁ = i≤niltree i₁
+    l2 i₁ i₂ (tip x₂) x (i≤tip .i₂ .x₂ x₁) = i≤tip i₁ x₂ (≤trans x x₁)
+    l2 i₁ i₂ (node t₁ x₂ t₂) x (i≤node .i₂ .x₂ .t₁ .t₂ x₁ x₃) =
+      i≤node i₁ x₂ t₁ t₂ (l2 i₁ i₂  t₁ x x₁) (l2 i₁ i₂ t₂ x x₃)
+
+    l : {{_ : TotalOrder Item}} {i : Item} → (t t₁ : Tree Item) → t ₜ≤ᵢ i → i ᵢ≤ₜ t₁ → t ₜ₁≤ₜ₂ t₁
+    l .niltree t₁ (niltree≤i _) x₁ = niltree≤t t₁
+    l .(tip i₁) .niltree (tip≤i _ i₁ x) (i≤niltree _) = tip≤t i₁ niltree (i≤niltree i₁)
+    l .(tip i₁) .(tip i₂) (tip≤i _ i₁ x) (i≤tip _ i₂ x₁) = tip≤t i₁ (tip i₂) (i≤tip i₁ i₂ (≤trans  x x₁))
+    l .(tip i₁) .(node t₁ i₂ t₂) (tip≤i _ i₁ x) (i≤node _ i₂ t₁ t₂ x₁ x₂)
+      = tip≤t i₁ (node t₁ i₂ t₂) (i≤node i₁ i₂ t₁ t₂ (l2 i₁ _ t₁ x x₁) (l2 i₁ _ t₂ x x₂))
+    l .(node t₂ i₁ t₃) t₁ (node≤i _ i₁ t₂ t₃ x x₂) x₁ = node≤t t₂ t₃ t₁ i₁ (l t₂ t₁ x x₁) (l t₃ t₁ x₂ x₁)
