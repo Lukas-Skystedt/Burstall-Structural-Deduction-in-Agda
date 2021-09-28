@@ -27,8 +27,6 @@ record TotalOrder (Carrier : Set) : Set₁ where
 
 
 open TotalOrder {{...}} public
-
-
 instance
   ℕ≤ : TotalOrder ℕ
   _≤_   {{ℕ≤}}  = _≤ₙ_
