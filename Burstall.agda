@@ -38,7 +38,6 @@ lit : (A → B → B) → List A → B → B
 lit f []       y = y
 lit f (x ∷ xs) y = f x (lit f xs y)
 
-
 lit-concat-lemma : (f : (A → B → B)) (xs₁ xs₂ : List A) (y : B)
                  → lit f (concat xs₁ xs₂) y ≡ lit f xs₁ (lit f xs₂ y)
 lit-concat-lemma f (x ∷ xs₁) xs₂ y =
@@ -61,6 +60,13 @@ lit-concat-lemma f [] xs₂ y =
   lit f [] (lit f xs₂ y) ∎
 
 
+
+
+
+
+
+
+
 p-lemma : {xs : List A} → {y₀ : A} → {f : A → A → A} → {P : A → Set} →
           P y₀ →
           (∀ {x y} → P y → P (f x y)) →
@@ -77,7 +83,6 @@ data Tree (Item : Set) : Set where
   niltree : Tree Item
   tip     : Item → Tree Item
   node    : Tree Item → Item → Tree Item → Tree Item
-
 
 private
   variable
@@ -105,13 +110,13 @@ maketree : List Item → Tree Item
 maketree is = lit totree is niltree
 
 
-flatten : Tree Item → List (Item)
+flatten : Tree Item → List Item
 flatten niltree         = []
 flatten (tip i)         = [ i ]
 flatten (node t₁ i₁ t₂) = concat (flatten t₁) (flatten t₂)
 
 
-sort : List (Item) → List (Item)
+sort : List Item → List Item
 sort is = flatten (maketree is)
 
 
@@ -120,41 +125,14 @@ data _i≤is_ : Item → List Item → Set where
   i≤∷  : i₁ ≤ i₂ → i₁ i≤is is → i₁ i≤is (i₂ ∷ is)
 
 
--- TODO: This function is never used
--- i≤is? : (i : Item) → (is : List (Item)) →  Dec ( i i≤is is)
--- i≤is? x [] = yes i≤[]
--- i≤is? x₁ (x₂ ∷ xs) with ≤dec x₁ x₂ | i≤is? x₁ xs
--- ... | no proof  | _          = no λ { (i≤∷ p _) → proof p}
--- ... | yes _     | no ¬p      = no (λ { (i≤∷ _ p) → ¬p p})
--- ... | yes proof | yes proof₁ = yes (i≤∷ proof proof₁)
-
-
 data _is≤is_ : List Item → List Item → Set where
   []≤is : [] is≤is is
   ∷≤is  : i i≤is is₂ → is₁ is≤is is₂ → (i ∷ is₁) is≤is is₂
 
 
--- TODO: This function is never used
--- is≤is? : (is₁ is₂ : List (Item)) → Dec ( is₁ is≤is is₂)
--- is≤is? [] is = yes []≤is
--- is≤is? (i₁ ∷ is₁) is₂ with i≤is? i₁ is₂ | is≤is? is₁ is₂
--- ... | no  ¬i₁≤is₂ | _            = no λ { (∷≤is i₁≤is₂ _) → ¬i₁≤is₂ i₁≤is₂ }
--- ... | yes _       | no  ¬is₁≤is₂ = no λ { (∷≤is _ is₁≤is₂) → ¬is₁≤is₂ is₁≤is₂}
--- ... | yes i₁≤is₂  | yes is₁≤i₂   = yes (∷≤is i₁≤is₂ is₁≤i₂)
-
-
 data ord : List Item → Set where
   ord[] : ord []
   ord∷  : i i≤is is → ord is → ord (i ∷ is)
-
-
--- TODO: This function is never used
--- ord? : (is : List Item) → Dec (ord is)
--- ord? [] = yes ord[]
--- ord? (i ∷ is) with i≤is? i is | ord? is
--- ... | yes p | yes p₁ = yes (ord∷ p p₁)
--- ... | yes p | no ¬p = no (λ { (ord∷ x x₁) → ¬p x₁})
--- ... | no ¬p | b = no (λ { (ord∷ x x₁) → ¬p x})
 
 
 data _i≤t_  : Item → Tree Item → Set where
@@ -163,34 +141,10 @@ data _i≤t_  : Item → Tree Item → Set where
   i≤node    : i i≤t t₁ → i i≤t t₂ → i i≤t node t₁ i₁ t₂
 
 
--- TODO: This function is never used
--- i≤t? : (i : Item) → (t : Tree Item) → Dec (i i≤t t)
--- i≤t? i niltree = yes i≤niltree
--- i≤t? i (tip i₁) with ≤dec i i₁
--- ... | no  ¬i≤i₁ = no λ { (i≤tip i≤i₁) → ¬i≤i₁ i≤i₁}
--- ... | yes  i≤i₁ = yes (i≤tip i≤i₁)
--- i≤t? i (node t₁ i₁ t₂) with i≤t? i t₁ | i≤t? i t₂
--- ... | no  ¬i≤t₁ | _          = no λ { (i≤node i≤t₁ _) → ¬i≤t₁ i≤t₁ }
--- ... | yes _     | no  ¬i≤t₂  = no λ { (i≤node _ i≤t₂) → ¬i≤t₂ i≤t₂ }
--- ... | yes i≤t₁  | yes i≤t₂   = yes (i≤node i≤t₁ i≤t₂)
-
-
 data _t≤i_  : Tree Item → Item → Set where
   niltree≤i : niltree t≤i i
   tip≤i     : i₁ ≤ i → tip i₁ t≤i i
   node≤i    : t₁ t≤i i → t₂ t≤i i → node t₁ i₁ t₂ t≤i i
-
-
--- TODO: This function is never used
--- t≤i? :  (t : Tree Item) → (i : Item) → Dec (t t≤i i)
--- t≤i? niltree  i = yes niltree≤i
--- t≤i? (tip i₁) i with ≤dec i₁ i
--- ... | no  ¬i₁≤i = no λ { (tip≤i i₁≤i) → ¬i₁≤i i₁≤i}
--- ... | yes  i₁≤i = yes (tip≤i i₁≤i)
--- t≤i? (node t₁ i₁ t₂) i with t≤i? t₁ i | t≤i? t₂ i
--- ... | no  ¬t₁≤i | _          = no λ { (node≤i t₁≤i _) → ¬t₁≤i t₁≤i }
--- ... | yes _     | no  ¬t₂≤i  = no λ { (node≤i _ t₂≤i) → ¬t₂≤i t₂≤i }
--- ... | yes t₁≤i  | yes t₂≤i   = yes  (node≤i t₁≤i t₂≤i)
 
 
 data _t≤t_  : Tree Item → Tree Item → Set where
@@ -199,38 +153,14 @@ data _t≤t_  : Tree Item → Tree Item → Set where
   node≤t    : t₁₁ t≤t t₂ → t₁₂ t≤t t₂ → (node t₁₁ i t₁₂ t≤t t₂)
 
 
--- TODO: This function is never used
--- t≤t? : (t₁ t₂ : Tree Item) → Dec (t₁ t≤t t₂)
--- t≤t? niltree t = yes (niltree≤t)
--- t≤t? (tip i) t₂ with i≤t? i t₂
--- ... | yes p = yes (tip≤t p)
--- ... | no ¬p = no (λ { (tip≤t x) → ¬p x})
--- t≤t? (node t₁₁ i t₁₂) t₂ with t≤t? t₁₁ t₂ | t≤t? t₁₂ t₂
--- ... | yes p | yes p₁ = yes (node≤t p p₁)
--- ... | no ¬p | yes p  = no λ { (node≤t x x₁) → ¬p x}
--- ... | p     | no ¬p  = no λ { (node≤t x x₁) → ¬p x₁}
-
-
 data ordₜ : Tree Item → Set where
   ord-nil  : ordₜ niltree
   ord-tip  : ordₜ (tip i)
   ord-node : ordₜ t₁ → ordₜ t₂ → t₁ t≤i i → i i≤t t₂ → ordₜ (node t₁ i t₂)
 
 
--- TODO: This function is never used
--- ordₜ? :  (t : Tree Item) → Dec (ordₜ t)
--- ordₜ? niltree = yes ord-nil
--- ordₜ? (tip i) = yes ord-tip
--- ordₜ? (node t₁ i t₂) with ordₜ? t₁ | ordₜ? t₂ | t≤i? t₁ i | i≤t? i t₂
--- ... | no  a | b     | c     | d     = no λ { (ord-node x x₁ x₂ x₃) → a x }
--- ... | yes a | no b  | c     | d     = no λ { (ord-node x x₁ x₂ x₃) → b x₁}
--- ... | yes a | yes b | no  c | d     = no λ { (ord-node x x₁ x₂ x₃) → c x₂}
--- ... | yes a | yes b | yes c | no  d = no λ { (ord-node x x₁ x₂ x₃) → d x₃}
--- ... | yes a | yes b | yes c | yes d = yes (ord-node a b c d)
-
-
-lemma : (i₁ i₂ : Item) (t : Tree Item) → i₁ ≤ i₂ → i₁ i≤t t → ordₜ (totree i₂ t)
-      → i₁ i≤t totree i₂ t
+lemma : (i₁ i₂ : Item) (t : Tree Item)
+      → i₁ ≤ i₂ → i₁ i≤t t → ordₜ (totree i₂ t) → i₁ i≤t totree i₂ t
 lemma i₁ i₂ niltree  i₁≤i₂ i≤niltree ord-tip = i≤tip i₁≤i₂
 lemma i₁ i₂ (tip i₃) i₁≤i₂ (i≤tip i₁≤i₃) p with ≤dec i₃ i₂
 ... | yes _      = i≤node (i≤tip i₁≤i₃) (i≤tip i₁≤i₂)
@@ -331,3 +261,4 @@ flatten-ord (node t x₁ t₁) (ord-node x x₂ x₃ x₄) =
 
 sort-ord : {is : List Item} → ord (sort is)
 sort-ord {is} = flatten-ord _ (maketree-ord is)
+
