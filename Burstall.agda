@@ -12,7 +12,8 @@ open import Data.Bool using (true; false; Bool; _∧_)
 open import Function using (_∘_)
 open import TotalOrder
 
--- The module is parametrized by the type of items (in lists and trees) and a decidable total order on it.
+-- The module is parametrized by the type of items (in lists and trees) and a
+-- decidable total order on it.
 module Burstall (Item : Set) (Ordering : TotalOrder Item) where
 
 private
@@ -52,20 +53,12 @@ lit-concat-lemma f (x ∷ xs₁) xs₂ y =
   ≡⟨⟩ -- by def. of lit
   lit f (x ∷ xs₁) (lit f xs₂ y) ∎
 lit-concat-lemma f [] xs₂ y =
-  begin
-  lit f (concat [] xs₂) y
-  ≡⟨⟩ -- By def. of concat
-  lit f xs₂ y
-  ≡⟨⟩
-  lit f [] (lit f xs₂ y) ∎
-
-
-
-
-
-
-
-
+   begin
+   lit f (concat [] xs₂) y
+   ≡⟨⟩ -- By def. of concat
+   lit f xs₂ y
+   ≡⟨⟩
+   lit f [] (lit f xs₂ y) ∎
 
 p-lemma : {xs : List A} → {y₀ : A} → {f : A → A → A} → {P : A → Set} →
           P y₀ →
@@ -261,4 +254,3 @@ flatten-ord (node t x₁ t₁) (ord-node x x₂ x₃ x₄) =
 
 sort-ord : {is : List Item} → ord (sort is)
 sort-ord {is} = flatten-ord _ (maketree-ord is)
-

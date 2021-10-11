@@ -23,12 +23,13 @@ private variable
 
 data Obj {A : Set} : Type → Set where
   item'    : A → Obj (item A)
+
   []       : Obj (list A)
   _∷_      : Obj {A} (item A) → Obj {A} (list A) → Obj (list A)
+
   niltree  : Obj (tree A)
   tip      : Obj {A} (item A) → Obj (tree A)
   node     : Obj {A} (tree A) → Obj {A} (item A) → Obj {A} (tree A) → Obj (tree A)
-
 
 Item List Tree : (T : Set) → Set
 Item T = Obj {T} (item T)

@@ -40,7 +40,7 @@
 }
 
 % Information to be included in the title page:
-\title{Burstall}
+\title{Formalizing \textit{Proving properties of programs by structural induction} in Agda}
 \author{Johannes Ljung Ekeroth, Lukas Skystedt}
 \date{October, 2021}
 
@@ -50,15 +50,10 @@
 \frame{\titlepage}
 \begin{frame}[fragile]
   \frametitle{Overview}
-  \begin{block}{Burstall's Language}
-    The paper uses a small, informal, untyped functional language with
-    \begin{itemize}
-    \item atoms, $i$, with an ordering relation $\leq$;
-    \item lists, $is$;
-    \item trees, $t$.
-    \end{itemize} 
-  \end{block}
-  \pause
+  Paper by R.M Burstall: \textit{Proving properties of programs by structural induction} (available through the \href{https://web.archive.org/web/20201112001546/https://www.cse.chalmers.se/edu/year/2010/course/DAT140_Types/Burstall.pdf}{Wayback Machine}).
+\vspace{1em}
+
+  The paper uses a small, informal, untyped functional language with
   \begin{itemize}
   \item Correctness proofs of two functions
     \begin{itemize}
@@ -163,6 +158,21 @@
   \end{itemize}
 \end{frame}
 \begin{frame}
+  \begin{itemize}
+  \item \code{concat}, \code{flatten} also respect ordering.
+  \end{itemize}
   {\center\includegraphics[width=.5\textwidth]{./ord-concat.png}\\}
 \end{frame}
+
+\begin{frame}
+  \frametitle{Summary}
+ % TODO rephrase 
+  \begin{itemize}
+  \item Formalization can reveal that things that appear trivial, and are
+    therefore omitted, are not actually always trivial.
+  \item Formalization can help find errors.
+  \item Equational reasoning is neat.
+  \end{itemize}
+\end{frame}
 \end{document}
+

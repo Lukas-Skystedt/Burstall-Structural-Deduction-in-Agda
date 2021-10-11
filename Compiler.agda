@@ -6,7 +6,7 @@ open import Data.Nat using (ℕ; suc; zero; _+_)
 open import Data.Nat renaming (_≤_ to _≤ₙ_)
 open import Data.Sum renaming (_⊎_ to _∨_)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.List using ([]; _∷_; List; [_] )
+open import Data.List using (_∷_; List; [_] ) renaming ([] to nil)
 open import Data.Bool using (true; false; Bool; _∧_)
 open import Function using (_∘_)
 
@@ -84,10 +84,10 @@ do' (loadconst c)  st = itemof c ∷ st
 
 -- TODO: remove duplication
 concat : List A → List A → List A
-concat []        xs₂ = xs₂
+concat nil       xs₂ = xs₂
 concat (x ∷ xs₁) xs₂ = x ∷ concat xs₁ xs₂
 lit : (A → B → B) → List A → B → B
-lit f []       y = y
+lit f nil      y = y
 lit f (x ∷ xs) y = f x (lit f xs y)
 lit-concat-lemma : (f : (A → B → B)) (xs₁ xs₂ : List A) (y : B)
                  → lit f (concat xs₁ xs₂) y ≡ lit f xs₁ (lit f xs₂ y)
@@ -102,13 +102,13 @@ lit-concat-lemma f (x ∷ xs₁) xs₂ y =
   f x (lit f xs₁ (lit f xs₂ y))
   ≡⟨⟩ -- by def. of lit
   lit f (x ∷ xs₁) (lit f xs₂ y) ∎
-lit-concat-lemma f [] xs₂ y =
+lit-concat-lemma f nil xs₂ y =
   begin
-  lit f (concat [] xs₂) y
+  lit f (concat nil xs₂) y
   ≡⟨⟩ -- By def. of concat
   lit f xs₂ y
   ≡⟨⟩
-  lit f [] (lit f xs₂ y) ∎
+  lit f nil (lit f xs₂ y) ∎
 
 mpval : Mprogram → Stack → Stack
 mpval mp = λ { st → lit do' mp st }
@@ -117,8 +117,8 @@ mpval mp = λ { st → lit do' mp st }
 
 comp : Expr → Mprogram
 comp (compound op e₁ e₂) = operate op ∷ concat (comp e₁) (comp e₂)
-comp (identexpr id)      = loadident id ∷ []
-comp (constexpr c)       = loadconst c ∷ []
+comp (identexpr id)      = loadident id ∷ nil
+comp (constexpr c)       = loadconst c ∷ nil
 
 theorem1 : {e : Expr} {s : Stack} → mpval (comp e) s ≡ val e ∷ s
 theorem1 {e@(compound op e₁ e₂)} {s} =
@@ -137,14 +137,39 @@ theorem1 {e@(compound op e₁ e₂)} {s} =
   do' (operate op) (lit do' (comp e₁) (lit do' (comp e₂) s))
   ≡⟨⟩
   do' (operate op) (mpval (comp e₁) (mpval (comp e₂) s)) -- This expression was incorrect in the paper
-  ≡⟨ cong (λ x → do' (operate op) (mpval (comp e₁) x)) q ⟩ 
+  ≡⟨ cong (λ x → do' (operate op) (mpval (comp e₁) x)) q ⟩
   do' (operate op) (mpval (comp e₁) (val e₂ ∷ s)) -- This expression was incorrect in the paper
-  ≡⟨ cong (do' (operate op)) p ⟩ 
+  ≡⟨ cong (do' (operate op)) p ⟩
   do' (operate op) (val e₁ ∷ val e₂ ∷ s)
   ≡⟨⟩
   funcof op (val e₁) (val e₂) ∷ s
   ≡⟨⟩
   val e ∷ s -- RHS
   ∎
-theorem1 {identexpr id} {s} = {!!}
-theorem1 {constexpr c} {s} = {!!}
+theorem1 {e@(identexpr id)} {s} =
+  mpval (comp e) s
+  ≡⟨⟩
+  lit do' (comp e) s
+  ≡⟨⟩
+  lit do' (loadident id ∷ nil) s
+  ≡⟨⟩
+  do' (loadident id) s
+  ≡⟨⟩
+  varvalue (varof id) ∷ s
+  ≡⟨⟩
+  val e ∷ s ∎
+theorem1 {e@(constexpr c)} {s}  =
+  mpval (comp e) s
+  ≡⟨⟩
+  lit do' (comp e) s
+  ≡⟨⟩
+  lit do' (loadconst c ∷ nil) s
+  ≡⟨⟩
+  do' (loadconst c) s
+  ≡⟨⟩
+  itemof c ∷ s
+  ≡⟨⟩
+  val e ∷ s ∎
+
+
+
