@@ -50,11 +50,9 @@
 \frame{\titlepage}
 \begin{frame}[fragile]
   \frametitle{Overview}
-  Paper by R.M Burstall: \textit{Proving properties of programs by structural induction} (available through the \href{https://web.archive.org/web/20201112001546/https://www.cse.chalmers.se/edu/year/2010/course/DAT140_Types/Burstall.pdf}{Wayback Machine}).
-\vspace{1em}
-
-  The paper uses a small, informal, untyped functional language with
   \begin{itemize}
+  \item Paper by R.M Burstall: \textit{Proving properties of programs by structural induction} (available through the \href{https://web.archive.org/web/20201112001546/https://www.cse.chalmers.se/edu/year/2010/course/DAT140_Types/Burstall.pdf}{Wayback Machine}).
+  \item    The paper uses a small, informal, untyped functional language.
   \item Correctness proofs of two functions
     \begin{itemize}
     \item sorting algorithm
@@ -62,7 +60,6 @@
     \end{itemize} 
     \pause
   \item We formalize the proofs in Agda. We do not formalize the language.
-    \pause
   \item Code available on GitHub:\\ \small \url{https://github.com/Lukas-Skystedt/Burstall-Structural-Deduction-in-Agda}.
   \end{itemize}
 \end{frame}
@@ -79,14 +76,14 @@
 
 \section{Basic definitions and lemmas}
 \begin{frame}
+  \begin{block}{First lemma}
+    \center\includegraphics[width=.5\textwidth]{./lit-concat-lemma.png}\\
+  \end{block}
+  \pause
   \begin{block}{Basic Functions}
     {\center \includegraphics[width=.5\textwidth]{./concat.png}\\
       \includegraphics[width=.5\textwidth]{./lit.png}\\}
     Note: \code{lit} is commonly called \code{foldl}.
-  \end{block}
-  \pause
-  \begin{block}{First lemma}
-    \center\includegraphics[width=.5\textwidth]{./lit-concat-lemma.png}\\
   \end{block}
 \end{frame} 
 
@@ -145,6 +142,7 @@
 \begin{frame}
   Goal:
   {\center\includegraphics[width=.5\textwidth]{./sort-theorem.png}\\}
+  \pause
   But first, some definitions:\\
 
   {\center\includegraphics[width=.5\textwidth]{./orderings.png}\\}

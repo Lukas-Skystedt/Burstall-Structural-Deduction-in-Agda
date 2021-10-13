@@ -34,13 +34,13 @@ private variable
 
 -- From paper: Definition of concat
 concat : List A → List A → List A
-concat nil        xs₂ = xs₂
+concat nil       xs₂ = xs₂
 concat (x ∷ xs₁) xs₂ = x ∷ concat xs₁ xs₂
 
 
 -- From paper: Definition of lit (same as foldl)
 lit : (A → B → B) → List A → B → B
-lit f nil       y = y
+lit f nil      y = y
 lit f (x ∷ xs) y = f x (lit f xs y)
 
 
@@ -156,7 +156,7 @@ data ordₜ : Tree Item → Set where
   ord-node : ordₜ t₁ → ordₜ t₂ → t₁ t≤i i → i i≤t t₂ → ordₜ (node t₁ i t₂)
 
 
--- Not from paper: An upper bound is preserved when adding elements to a tree.
+-- Not from paper: A lower bound is preserved when adding elements to a tree.
 lemma : (i₁ i₂ : Item) (t : Tree Item)
       → i₁ ≤ i₂ → i₁ i≤t t → ordₜ (totree i₂ t) → i₁ i≤t totree i₂ t
 lemma i₁ i₂ niltree  i₁≤i₂ i≤niltree ord-tip = i≤tip i₁≤i₂
