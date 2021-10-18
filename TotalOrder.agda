@@ -3,7 +3,7 @@ module TotalOrder where
 import Relation.Binary.PropositionalEquality as Eq
 
 open        Eq               using    (_≡_; refl; cong)
-open import Data.Nat         using    (ℕ)
+open import Data.Nat         using    (ℕ; z≤n; s≤s; suc; zero)
                              renaming (_≤_ to _≤ₙ_)
 open import Data.Empty       using    (⊥; ⊥-elim)
 open import Relation.Nullary using    (¬_; Dec; yes; no)
