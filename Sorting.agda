@@ -60,9 +60,9 @@ lit-concat-lemma f (x ∷ xs₁) xs₂ y =
   lit f (x ∷ xs₁) (lit f xs₂ y)  ∎                  -- = RHS
 lit-concat-lemma f nil xs₂ y =
   -- LHS =
-  lit f (concat nil xs₂) y  ≡⟨⟩ -- by defn. of concat
-  lit f xs₂ y               ≡⟨⟩ -- by defn. of lit
-  lit f nil (lit f xs₂ y)   ∎   -- = RHS
+  lit f (concat nil xs₂) y       ≡⟨⟩ -- by defn. of concat
+  lit f xs₂ y                    ≡⟨⟩ -- by defn. of lit
+  lit f nil (lit f xs₂ y)        ∎   -- = RHS
 
 
 -- From paper: Unnamed lemma.
@@ -117,17 +117,17 @@ sort is = flatten (maketree is)
 
 data _i≤is_ : Item → List Item → Set where
   i≤nil : i i≤is nil
-  i≤∷  : i₁ ≤ i₂ → i₁ i≤is is → i₁ i≤is (i₂ ∷ is)
+  i≤∷   : i₁ ≤ i₂ → i₁ i≤is is → i₁ i≤is (i₂ ∷ is)
 
 
 data _is≤is_ : List Item → List Item → Set where
   nil≤is : nil is≤is is
-  ∷≤is  : i i≤is is₂ → is₁ is≤is is₂ → (i ∷ is₁) is≤is is₂
+  ∷≤is   : i i≤is is₂ → is₁ is≤is is₂ → (i ∷ is₁) is≤is is₂
 
 
 data ord : List Item → Set where
   ord-nil : ord nil
-  ord∷  : i i≤is is → ord is → ord (i ∷ is)
+  ord∷    : i i≤is is → ord is → ord (i ∷ is)
 
 
 data _i≤t_  : Item → Tree Item → Set where

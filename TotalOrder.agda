@@ -2,12 +2,12 @@ module TotalOrder where
 
 import Relation.Binary.PropositionalEquality as Eq
 
-open Eq using (_≡_; refl; cong)
-open import Data.Nat using (ℕ)
-open import Data.Nat renaming (_≤_ to _≤ₙ_)
-open import Data.Empty using (⊥; ⊥-elim)
-open import Relation.Nullary using (¬_; Dec; yes; no)
-open import Data.Sum renaming (_⊎_ to _∨_)
+open        Eq               using    (_≡_; refl; cong)
+open import Data.Nat         using    (ℕ)
+                             renaming (_≤_ to _≤ₙ_)
+open import Data.Empty       using    (⊥; ⊥-elim)
+open import Relation.Nullary using    (¬_; Dec; yes; no)
+open import Data.Sum         renaming (_⊎_ to _∨_)
 
 
 record TotalOrder (Carrier : Set) : Set₁ where
